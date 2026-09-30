@@ -162,6 +162,11 @@ body {
   .footer {
     border-top: 1px solid hsla(0, 0%, 0%, 0.14);
   }
+
+  .footer__text {
+    display: block;
+    width: 960px;
+  }
 }
 
 .side-menu {

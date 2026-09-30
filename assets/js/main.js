@@ -123,11 +123,13 @@ class Hamburger {
   #scrollToTop;
   #handleClick;
   #handleKeydown;
+  #mobileQuery;
   #desktopQuery;
   #handleDesktopChange;
 
   static DEFAULT_MENU_SELECTOR = '#side-menu';
   static DESKTOP_BREAKPOINT = '(min-width: 1024px)';
+  static MOBILE_BREAKPOINT = '(max-width: 639px)';
 
   /**
    * Конструктор класса
@@ -135,11 +137,7 @@ class Hamburger {
    * @param {string} menuSelector — селектор меню
    * @param {object} options — опции: openLabel, closeLabel, scrollToTop
    */
-  constructor(
-    buttonSelector,
-    menuSelector = Hamburger.DEFAULT_MENU_SELECTOR,
-    options = {}
-  ) {
+  constructor(buttonSelector, menuSelector = Hamburger.DEFAULT_MENU_SELECTOR, options = {}) {
     this.#button = document.querySelector(buttonSelector);
     this.#menu = document.querySelector(menuSelector);
 
@@ -152,7 +150,9 @@ class Hamburger {
 
     this.#init();
 
+    this.#mobileQuery = window.matchMedia(Hamburger.MOBILE_BREAKPOINT);
     this.#desktopQuery = window.matchMedia(Hamburger.DESKTOP_BREAKPOINT);
+
     this.#handleDesktopChange = (event) => {
       if (event.matches) {
         this.#enableMenu();
@@ -169,6 +169,11 @@ class Hamburger {
       if (event.key === 'Escape' && this.#isOpen()) {
         this.#close();
         this.#button.focus();
+        return;
+      }
+
+      if (event.key === 'Tab' && this.#isOpen()) {
+        this.#trapFocus(event);
       }
     };
 
@@ -188,11 +193,46 @@ class Hamburger {
   }
 
   /**
+   * Удерживает фокус внутри открытого меню при Tab / Shift+Tab
+   * @param {KeyboardEvent} event обрабатываемое событие
+   */
+  #trapFocus(event) {
+    if (!this.#isMobile()) return;
+
+    const focusable = [
+      this.#button,
+      ...this.#menu.querySelectorAll(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ),
+    ];
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+
+    if (event.shiftKey && active === first) {
+      event.preventDefault();
+      requestAnimationFrame(() => last.focus());
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      requestAnimationFrame(() => first.focus());
+    }
+  }
+
+  /**
    * Проверяем открыто ли меню
    * @returns {boolean} true, если открыто
    */
   #isOpen() {
     return this.#button.getAttribute('aria-expanded') === 'true';
+  }
+
+  /**
+   * Проверяем, мобильная версия или нет
+   * @returns {boolean} true, если мобильная версии
+   */
+  #isMobile() {
+    return this.#mobileQuery.matches;
   }
 
   /**
@@ -255,6 +295,8 @@ class Hamburger {
     this.#button.removeEventListener('click', this.#handleClick);
     document.removeEventListener('keydown', this.#handleKeydown);
     this.#desktopQuery.removeEventListener('change', this.#handleDesktopChange);
+
+    if (!this.#desktopQuery.matches) { this.#disableMenu(); }
   }
 }
 
