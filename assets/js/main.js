@@ -16,14 +16,9 @@ __webpack_require__.r(__webpack_exports__);
  * Класс скрывающий последнюю строку грида, если она не заполнена
  */
 class AdjustLastRow {
-  /** @private */
-  _grid;
-
-  /** @private */
-  _items;
-
-  /** @private */
-  _resizeObserver;
+  #grid;
+  #items;
+  #resizeObserver;
 
   /**
    * Конструктор класса
@@ -31,78 +26,74 @@ class AdjustLastRow {
    * @param {string} itemSelector - Селектор элементов грида
    */
   constructor(gridSelector, itemSelector) {
-    this._grid = document.querySelector(gridSelector);
-    this._items = this._grid ? this._grid.querySelectorAll(itemSelector) : [];
-    this._resizeObserver = null;
+    this.#grid = document.querySelector(gridSelector);
 
-    this.run();
+    if (!this.#grid) throw new Error(`Grid not found: ${gridSelector}`);
 
-    this._resizeObserver = new ResizeObserver(() => {
-      requestAnimationFrame(() => this.run());
+    this.#items = Array.from(this.#grid.querySelectorAll(itemSelector));
+    this.#resizeObserver = null;
+
+    this.#resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(() => this.#run());
     });
-    this._resizeObserver.observe(this._grid);
+    this.#resizeObserver.observe(this.#grid);
   }
 
   /**
    * Основной метод класса
-   * @public
    */
-  run() {
-    this.resetStyle();
-    this.hideRemainingItems();
+  #run() {
+    this.#resetStyle();
+    this.#hideRemainingItems();
   }
 
   /**
    * Получает количество колонок грида
-   * @public
-   * @returns {number|null} Количество колонок или null, если грид скрыт или не отрисован
+   * @returns {number} Количество колонок. 0 если грид скрыт или не отрисован
    */
-  getColumns() {
-    const computedColumns = getComputedStyle(this._grid).gridTemplateColumns;
-    return !computedColumns || computedColumns === null
-      ? false
+  #getColumns() {
+    const computedColumns = getComputedStyle(this.#grid).gridTemplateColumns;
+    return !computedColumns || computedColumns === 'none'
+      ? 0
       : computedColumns.split(' ').length;
   }
 
   /**
    * Сбрасывает стили у скрытых элементов грида
-   * @private
    */
-  resetStyle() {
-    this._items.forEach((item) => {
+  #resetStyle() {
+    for (const item of this.#items) {
       item.style.display = '';
-    });
+    }
   }
 
   /**
    * Скрывает элементы последней строки, если она неполная
-   * @private
    */
-  hideRemainingItems() {
-    const columns = this.getColumns();
+  #hideRemainingItems() {
+    const columns = this.#getColumns();
 
-    if (columns) {
-      const totalItems = this._items.length;
+    if (columns > 0) {
+      const totalItems = this.#items.length;
       const remainingItems = totalItems % columns;
 
       if (remainingItems > 0) {
-        const startIndex = totalItems - remainingItems;
-        for (let i = startIndex; i < totalItems; i++) {
-          this._items[i].style.display = 'none';
-        }
+        this.#items.slice(-remainingItems).forEach((item) => {
+          item.style.display = 'none';
+        });
       }
     }
   }
 
   /**
    * Деструктор класса — отключает наблюдатель и освобождает ресурсы
-   * @public
    */
   destroy() {
-    if (this._resizeObserver) {
-      this._resizeObserver.disconnect();
-      this._resizeObserver = null;
-    }
+    if (!this.#resizeObserver) return;
+
+    this.#resizeObserver.disconnect();
+    this.#resizeObserver = null;
+    this.#resetStyle();
   }
 }
 
@@ -121,72 +112,149 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
+/**
+ * Класс управления боковым меню через кнопку-бургер
+ */
 class Hamburger {
-  /** @private */
-  _button;
-  /** @private */
-  _menu;
-  /** @private */
-  _openLabel;
-  /** @private */
-  _closeLabel;
-  /** @private */
-  _handleClick;
+  #button;
+  #menu;
+  #openLabel;
+  #closeLabel;
+  #scrollToTop;
+  #handleClick;
+  #handleKeydown;
+  #desktopQuery;
+  #handleDesktopChange;
+
+  static DEFAULT_MENU_SELECTOR = '#side-menu';
+  static DESKTOP_BREAKPOINT = '(min-width: 1024px)';
 
   /**
    * Конструктор класса
-   * @param {string} buttonSelector селектор кнопки
-   * @param {string} menuSelector селектор меню
-   * @param {object} options объект опций openLabel, closeLabel, scrollToTop
+   * @param {string} buttonSelector — селектор кнопки
+   * @param {string} menuSelector — селектор меню
+   * @param {object} options — опции: openLabel, closeLabel, scrollToTop
    */
-  constructor(buttonSelector, menuSelector = '#top-menu', options = {}) {
-    this._button = document.querySelector(buttonSelector);
-    this._menu = document.querySelector(menuSelector);
+  constructor(
+    buttonSelector,
+    menuSelector = Hamburger.DEFAULT_MENU_SELECTOR,
+    options = {}
+  ) {
+    this.#button = document.querySelector(buttonSelector);
+    this.#menu = document.querySelector(menuSelector);
 
-    if (!this._button) throw new Error(`Button not found: ${buttonSelector}`);
-    if (!this._menu) throw new Error(`Menu not found: ${menuSelector}`);
+    if (!this.#button) throw new Error(`Button not found: ${buttonSelector}`);
+    if (!this.#menu) throw new Error(`Menu not found: ${menuSelector}`);
 
-    this._openLabel = options.openLabel ?? 'Open menu';
-    this._closeLabel = options.closeLabel ?? 'Close menu';
-    this._scrollToTop = options.scrollToTop ?? false;
+    this.#openLabel = options.openLabel ?? 'Open menu';
+    this.#closeLabel = options.closeLabel ?? 'Close menu';
+    this.#scrollToTop = options.scrollToTop ?? false;
 
-    this._init();
+    this.#init();
 
-    this._handleClick = () => this._handleMenuToggle();
-    this._button.addEventListener('click', () => this._handleMenuToggle());
+    this.#desktopQuery = window.matchMedia(Hamburger.DESKTOP_BREAKPOINT);
+    this.#handleDesktopChange = (event) => {
+      if (event.matches) {
+        this.#enableMenu();
+      } else if (!this.#isOpen()) {
+        this.#disableMenu();
+      }
+    };
+
+    this.#desktopQuery.addEventListener('change', this.#handleDesktopChange);
+    this.#handleDesktopChange(this.#desktopQuery);
+
+    this.#handleClick = () => this.#toggle();
+    this.#handleKeydown = (event) => {
+      if (event.key === 'Escape' && this.#isOpen()) {
+        this.#close();
+        this.#button.focus();
+      }
+    };
+
+    this.#button.addEventListener('click', this.#handleClick);
   }
 
   /**
-   * Установка базовых значений
+   * Установка базовых атрибутов
    */
-  _init() {
-    if (!this._button.hasAttribute('aria-expanded')) {
-      this._button.setAttribute('aria-expanded', 'false');
+  #init() {
+    if (!this.#button.hasAttribute('aria-expanded')) {
+      this.#button.setAttribute('aria-expanded', 'false');
     }
 
-    this._button.setAttribute('aria-controls', this._menu.id);
-    this._button.setAttribute('aria-label', this._openLabel);
+    this.#button.setAttribute('aria-controls', this.#menu.id);
+    this.#button.setAttribute('aria-label', this.#openLabel);
   }
 
   /**
-   * Обработчик события клика по кнопке
+   * Проверяем открыто ли меню
+   * @returns {boolean} true, если открыто
    */
-  _handleMenuToggle() {
-    const isExpanded = this._button.getAttribute('aria-expanded') === 'true';
-
-    this._button.setAttribute('aria-expanded', String(!isExpanded));
-    this._button.setAttribute('aria-label', isExpanded ? this._openLabel : this._closeLabel);
-    this._menu.setAttribute('aria-hidden', String(isExpanded));
-
-    // При закрытии меню, прокручиваем его в начало
-    if (isExpanded && this._scrollToTop) { this._menu.scrollTop = 0; }
+  #isOpen() {
+    return this.#button.getAttribute('aria-expanded') === 'true';
   }
 
   /**
-   * Деструктор класса
+   * Делает меню доступным для скринридера и Tab
+   */
+  #enableMenu() {
+    this.#menu.removeAttribute('aria-hidden');
+    this.#menu.removeAttribute('inert');
+  }
+
+  /**
+   * Скрывает меню от скринридера и исключает из Tab
+   */
+  #disableMenu() {
+    this.#menu.setAttribute('aria-hidden', 'true');
+    this.#menu.setAttribute('inert', '');
+  }
+
+  /**
+   * Открывает меню
+   */
+  #open() {
+    this.#button.setAttribute('aria-expanded', 'true');
+    this.#button.setAttribute('aria-label', this.#closeLabel);
+    if (!this.#desktopQuery.matches) {
+      this.#enableMenu();
+    }
+    document.addEventListener('keydown', this.#handleKeydown);
+  }
+
+  /**
+   * Закрывает меню
+   */
+  #close() {
+    this.#button.setAttribute('aria-expanded', 'false');
+    this.#button.setAttribute('aria-label', this.#openLabel);
+
+    if (!this.#desktopQuery.matches) {
+      this.#disableMenu();
+    }
+
+    document.removeEventListener('keydown', this.#handleKeydown);
+
+    if (this.#scrollToTop) {
+      this.#menu.scrollTop = 0;
+    }
+  }
+
+  /**
+   * Переключает состояние меню
+   */
+  #toggle() {
+    this.#isOpen() ? this.#close() : this.#open();
+  }
+
+  /**
+   * Деструктор класса — отключает обработчики и освобождает ресурсы
    */
   destroy() {
-    this._button.removeEventListener('click', () => this._handleMenuToggle());
+    this.#button.removeEventListener('click', this.#handleClick);
+    document.removeEventListener('keydown', this.#handleKeydown);
+    this.#desktopQuery.removeEventListener('change', this.#handleDesktopChange);
   }
 }
 

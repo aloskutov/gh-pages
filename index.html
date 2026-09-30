@@ -9,14 +9,21 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:ital,wdth,wght@0,75..100,100..900;1,75..100,100..900&amp;display=swap">
-    <link rel="stylesheet" href="/assets/css/styles.css">
-    <link rel="icon" href="/favicon.ico">
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="stylesheet" href="./assets/css/styles.css">
+    <link rel="icon" href="./favicon.ico">
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png">
     <meta name="theme-color" content="#FF5302">
   </head>
   <body>
-    <nav class="side-menu" id="side-menu" aria-hidden="true">
+      <button class="hamburger" type="button" aria-controls="side-menu" aria-expanded="false" aria-label="Open menu">
+        <svg class="hamburger__icon" fill="black" viewBox="0 0 24 21" width="24" height="21" aria-hidden="true" focusable="false">
+          <rect class="hamburger__line hamburger__line--top" width="24" height="5" x="0" y="0" rx="3"></rect>
+          <rect class="hamburger__line hamburger__line--middle" width="24" height="5" x="0" y="8" rx="3"></rect>
+          <rect class="hamburger__line hamburger__line--bottom" width="24" height="5" x="0" y="16" rx="3"></rect>
+        </svg>
+      </button>
+    <nav class="side-menu" id="side-menu" aria-hidden="true" inert>
       <div class="side-menu__header" aria-hidden="true"></div>
       <ul class="side-menu__list">
         <li class="side-menu__item"><a class="side-menu__link" href="#">Home</a></li>
@@ -41,13 +48,6 @@
         <button class="icon-button icon-button--third" type="button" aria-label="Third"></button>
       </div>
     </header>
-        <button class="hamburger" type="button" aria-controls="side-menu" aria-expanded="false" aria-label="Open menu">
-          <svg class="hamburger__icon" fill="black" viewBox="0 0 24 21" width="24" height="21" aria-hidden="true" focusable="false">
-            <rect class="hamburger__line hamburger__line--top" width="24" height="5" x="0" y="0" rx="3"></rect>
-            <rect class="hamburger__line hamburger__line--middle" width="24" height="5" x="0" y="8" rx="3"></rect>
-            <rect class="hamburger__line hamburger__line--bottom" width="24" height="5" x="0" y="16" rx="3"></rect>
-          </svg>
-        </button>
     <main>
       <section class="cards">
         <div class="cards__item">
@@ -364,6 +364,6 @@
       <h2 class="footer__title">What is Lorem Ipsum?</h2>
       <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.</p>
     </footer>
-    <script src="/assets/js/main.js" defer></script>
+    <script src="./assets/js/main.js" defer></script>
   </body>
 </html>
