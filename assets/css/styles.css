@@ -139,6 +139,7 @@ body {
 }
 
 .footer {
+  color: var(--footer-color);
   background-color: var(--theme-background);
   padding: 12px;
   font-size: 12px;
@@ -233,7 +234,7 @@ body {
 }
 
 .side-menu__link {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--side-menu-color);
   text-decoration: none;
   overflow-wrap: break-word;
